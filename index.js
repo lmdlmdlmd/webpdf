@@ -16,8 +16,8 @@ app.use(helmet())
 
 const tasklist = []
 const pwd = process.cwd()
-const temp_path = 'doctemplate'
-const out_path = 'output'
+const temp_path = 'upload'
+const out_path = 'download'
 
 app.get('/', (req, res) => {
   res.send('All for pdf')
@@ -28,22 +28,25 @@ app.post('/pdf', (req, res) => {
     convertTo : 'pdf' //can be docx, txt, ...
   }
   const body = req.body
-  const infile = body.in //输入的模版文件
-  const outfile = body.out //输出的文件
+  const infile = body.infile //输入的模版文件
+  const outfile = body.outfile //输出的文件
   const data = body.data //需要的资源
   if (!infile || !outfile || !data) {
-    res.json({code: 110, msg: 'param missing'})
+    res.json({code: 110, message: 'param missing'})
     return
   }
+  console.log(body)
   const inputpath = path.join(pwd, temp_path, infile)
-  carbone.render(inputpath, data, options, function(err, result) {
+  carbone.render(inputpath, data, options, async(err, result) => {
     if (err) {
-      res.json({code: 100, msg: err})
+      res.json({code: 100, message: err})
       return
     }
     // write the result
     const filename = path.join(pwd, out_path, outfile)
-    fs.writeFileSync(filename, result)
+    const dir = path.dirname(filename)
+    await fs.promises.mkdir(dir, { recursive: true })
+    await fs.promises.writeFile(filename, result)
     res.json({code: 0})
   })
 })
